@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">   
 <head>
+<meta charset="UTF-8">
 <title>Community</title>
 <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+
 <div class="container">
 
 <div class="sidebar">
@@ -22,27 +22,24 @@
 <h1>🌍 Community Leaderboard</h1>
 
 <div class="card">
-<h3>Top Eco Users</h3>
-<ul id="leaderboard"></ul>
+<ul id="leaderboard" class="leaderboard"></ul>
 </div>
 
 </main>
 </div>
 
 <script>
-const API= "";
+const API= "https://carbonyx-3.onrender.com";
 
 async function load(){
-    const res = await fetch("/api/users");
+    const res = await fetch(API+"/api/users");
     const users = await res.json();
 
-    // Calculate totals
     let ranked = users.map(u=>{
         const total = u.activities.reduce((s,a)=>s+a.value,0);
         return {name: u.username, total};
     });
 
-    // Sort LOWEST emissions = best
     ranked.sort((a,b)=>a.total-b.total);
 
     const list = document.getElementById("leaderboard");
@@ -50,12 +47,22 @@ async function load(){
 
     ranked.forEach((u,i)=>{
         const li = document.createElement("li");
-        li.innerText = `${i+1}. ${u.name} - ${u.total.toFixed(2)} kg CO₂`;
+
+        if(i===0) li.classList.add("rank-1");
+        if(i===1) li.classList.add("rank-2");
+        if(i===2) li.classList.add("rank-3");
+
+        li.innerHTML = `
+            <span>#${i+1} ${u.name}</span>
+            <span>${u.total.toFixed(2)} kg CO₂</span>
+        `;
+
         list.appendChild(li);
     });
 }
 
 load();
 </script>
+
 </body>
 </html>

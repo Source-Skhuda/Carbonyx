@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <head>
+<meta charset="UTF-8">
 <title>Insights</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -21,10 +20,9 @@
 
 <main>
 
-<h1>Insights</h1>
+<h1>📊 Insights</h1>
 
 <div class="card">
-<h3>Your Carbon Behaviour</h3>
 <canvas id="chart"></canvas>
 </div>
 
@@ -38,13 +36,13 @@
 </div>
 
 <script>
-const API="";
-const token=localStorage.getItem("token");
+const API = "https://carbonyx-3.onrender.com";
+const token = localStorage.getItem("token");
 
 let chart;
 
 async function load(){
-    const res = await fetch("/api/activity",{
+    const res = await fetch(API+"/api/activity",{
         headers:{ Authorization: token }
     });
 
@@ -64,14 +62,14 @@ async function load(){
         "Your highest emissions come from: " + top;
 
     if(top==="transport"){
-        tip.innerText="Reduce driving. Use public transport or carpool.";
-    }
-    else if(top==="food"){
-        tip.innerText="Cut down meat intake to reduce emissions.";
-    }
-    else{
-        tip.innerText="Reduce electricity use. Switch off appliances.";
-    }
+    edu.innerText="🚗 Transport is your biggest contributor. Try reducing solo trips, use public transport or carpool. Even 1 day less driving per week can significantly lower emissions.";
+}
+else if(top==="food"){
+    edu.innerText="🍖 Food emissions are high. Meat production has a heavy carbon footprint. Consider plant-based meals 2–3 times a week.";
+}
+else{
+    edu.innerText="⚡ Energy usage is high. Switch off unused appliances and consider energy-efficient devices to cut emissions.";
+}
 
     renderChart(catSum);
 }
@@ -83,7 +81,10 @@ function renderChart(data){
         type:"bar",
         data:{
             labels:Object.keys(data),
-            datasets:[{ data:Object.values(data) }]
+            datasets:[{
+                data:Object.values(data),
+                backgroundColor:["#3CCF91","#F4D03F","#5DADE2"]
+            }]
         }
     });
 }

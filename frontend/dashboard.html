@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard | Carbonyx</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Poppins:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+<h2>Carbonyx</h2>
+<a href="dashboard.html">Dashboard</a>
+<a href="insights.html">Insights</a>
+<a href="community.html">Community</a>
+<a href="#" onclick="logout()">Logout</a>
+</div>
+
+<!-- MAIN -->
+<main>
+<h1 id="name"></h1>
+
+<div class="cards">
+<div class="card">Total: <span id="total">0</span> kg</div>
+<div class="card">Weekly: <span id="weekly">0</span></div>
+<div class="card">Status: <span id="status"></span></div>
+</div>
+
+<div class="activity-form">
+<select id="cat">
+<option value="transport">Transport</option>
+<option value="food">Food</option>
+<option value="energy">Energy</option>
+</select>
+
+<input id="val" type="number" placeholder="kg CO₂">
+<button onclick="add()">Add</button>
+</div>
+
+<canvas id="chart"></canvas>
+
+<ul id="list"></ul>
+
+</main>
+</div>
+
+<script>
+const API = "https://carbonyx-3.onrender.com";
+const token = localStorage.getItem("token");
+const user = JSON.parse(localStorage.getItem("user"));
+
+if(!token) window.location="index.html";
+
+document.getElementById("name").innerText = "Welcome, " + user.username;
+
+let chart;
+
+async function load(){
+    const res = await fetch(API+"/api/activity",{
+        headers:{ Authorization: token }
+    });
+
+    const data = await res.json();
+
+    let total=0;
+    let weekly=0;
+    let catSum={transport:0,food:0,energy:0};
+
+    list.innerHTML="";
+
+    const today = new Date();
+
+    data.forEach(a=>{
+        total+=a.value;
+
+        const d = new Date(a.date);
+        if((today-d)/(1000*60*60*24)<=7) weekly+=a.value;
+
+        catSum[a.category]+=a.value;
+
+        const li=document.createElement("li");
+        li.innerText=a.category+" - "+a.value+" kg";
+        list.appendChild(li);
+    });
+
+    document.getElementById("total").innerText=total.toFixed(2);
+    document.getElementById("weekly").innerText=weekly.toFixed(2);
+
+    document.getElementById("status").innerText =
+        total > 80 ? "⚠️ High" : "✅ Good";
+
+    renderChart(catSum);
+}
+
+async function add(){
+    await fetch(API+"/api/activity",{
+        method:"POST",
+        headers:{
+            "Content-Type":"application/json",
+            Authorization: token
+        },
+        body: JSON.stringify({
+            category: cat.value,
+            value: parseFloat(val.value)
+        })
+    });
+
+    load();
+}
+
+function renderChart(data){
+    if(chart) chart.destroy();
+
+    chart = new Chart(document.getElementById("chart"),{
+        type:"pie",
+        data:{
+            labels:Object.keys(data),
+            datasets:[{
+                data:Object.values(data),
+                backgroundColor:['#3CCF91','#F4D03F','#5DADE2']
+            }]
+        }
+    });
+}
+
+function logout(){
+    localStorage.clear();
+    window.location="index.html";
+}
+
+load();
+</script>
+
+</body>
+</html>

@@ -36,27 +36,44 @@
 <div class="grid">
 
 <!-- LEFT -->
-<div>
+<div class="dashboard-grid">
+
+<!-- LEFT -->
+<div class="left-panel">
 
 <div class="card">
 <h3>Add Activity</h3>
-
 <div class="activity-form">
 <select id="cat">
 <option value="transport">🚗 Transport</option>
 <option value="food">🍖 Food</option>
 <option value="energy">⚡ Energy</option>
 </select>
-
 <input id="val" type="number" placeholder="kg CO₂">
 <button onclick="add()">Add</button>
 </div>
-
 </div>
 
 <div class="card">
 <h3>Activity Log</h3>
 <ul id="list"></ul>
+</div>
+
+</div>
+
+<!-- RIGHT -->
+<div class="right-panel">
+
+<div class="card chart-card">
+<canvas id="chart"></canvas>
+</div>
+
+<div class="card insight-card">
+<h3>Smart Insights</h3>
+<p id="insight"></p>
+<p id="edu"></p>
+</div>
+
 </div>
 
 </div>
@@ -123,7 +140,13 @@ async function load(){
     weeklyEl.innerText=weekly.toFixed(2);
 
     // STATUS
-    status.innerText = total > 80 ? "⚠️ High" : "✅ Good";
+    if(total > 80){
+    status.innerText = "⚠️ High";
+    status.className = "status-bad";
+} else {
+    status.innerText = "✅ Good";
+    status.className = "status-good";
+}
 
     // INSIGHTS
     const top = Object.keys(catSum).reduce((a,b)=>
