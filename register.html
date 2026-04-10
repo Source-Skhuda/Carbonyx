@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+<head>
+<title>Carbonyx Register</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<div class="auth-container">
+<div class="auth-card">
+
+<h1>Carbonyx</h1>
+<p>Create your account 🌱</p>
+
+<form id="registerForm">
+<input id="user" placeholder="Username" required>
+<input id="pass" type="password" placeholder="Password" required>
+<button>Create Account</button>
+</form>
+
+<p>Already have an account? <a href="index.html">Login</a></p>
+
+</div>
+</div>
+
+<script>
+registerForm.onsubmit = async (e)=>{
+    e.preventDefault();
+
+    const res = await fetch("/api/register",{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body: JSON.stringify({
+            username: user.value,
+            password: pass.value
+        })
+    });
+
+    const data = await res.json();
+
+    if(res.ok){
+        alert("Account created successfully!");
+        window.location="index.html";
+    } else {
+        alert(data.message);
+    }
+};
+</script>
+
+</body>
+</html>

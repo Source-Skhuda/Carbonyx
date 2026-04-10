@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head>
+<title>Insights</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="sidebar">
+<h2>Carbonyx</h2>
+<a href="dashboard.html">Dashboard</a>
+<a href="insights.html">Insights</a>
+<a href="community.html">Community</a>
+</div>
+
+<main>
+
+<h1>Insights</h1>
+
+<div class="card">
+<h3>Your Carbon Behaviour</h3>
+<canvas id="chart"></canvas>
+</div>
+
+<div class="card">
+<h3>Analysis</h3>
+<p id="analysis"></p>
+<p id="tip" class="insight"></p>
+</div>
+
+</main>
+</div>
+
+<script>
+const API="https://carbonyx-2.onrender.com";
+const token=localStorage.getItem("token");
+
+let chart;
+
+async function load(){
+    const res = await fetch("/api/activity",{
+        headers:{ Authorization: token }
+    });
+
+    const data = await res.json();
+
+    let catSum={transport:0,food:0,energy:0};
+
+    data.forEach(a=>{
+        catSum[a.category]+=a.value;
+    });
+
+    const top = Object.keys(catSum).reduce((a,b)=>
+        catSum[a]>catSum[b]?a:b
+    );
+
+    document.getElementById("analysis").innerText =
+        "Your highest emissions come from: " + top;
+
+    if(top==="transport"){
+        tip.innerText="Reduce driving. Use public transport or carpool.";
+    }
+    else if(top==="food"){
+        tip.innerText="Cut down meat intake to reduce emissions.";
+    }
+    else{
+        tip.innerText="Reduce electricity use. Switch off appliances.";
+    }
+
+    renderChart(catSum);
+}
+
+function renderChart(data){
+    if(chart) chart.destroy();
+
+    chart = new Chart(document.getElementById("chart"),{
+        type:"bar",
+        data:{
+            labels:Object.keys(data),
+            datasets:[{ data:Object.values(data) }]
+        }
+    });
+}
+
+load();
+</script>
+
+</body>
+</html>
