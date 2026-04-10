@@ -26,27 +26,36 @@
 </div>
 
 <script>
-registerForm.onsubmit = async (e)=>{
+const form = document.getElementById("registerForm");
+
+form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const res = await fetch("/api/register",{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({
-            username: user.value,
-            password: pass.value
-        })
-    });
+    const username = document.getElementById("user").value;
+    const password = document.getElementById("pass").value;
 
-    const data = await res.json();
+    try {
+        const res = await fetch("/api/register", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username, password })
+        });
 
-    if(res.ok){
-        alert("Account created successfully!");
-        window.location="index.html";
-    } else {
-        alert(data.message);
+        const data = await res.json();
+
+        if (res.ok) {
+            alert("Account created!");
+            window.location.href = "index.html";
+        } else {
+            alert(data.message);
+        }
+    } catch (err) {
+        alert("Server error.");
+        console.error(err);
     }
-};
+});
 </script>
 
 </body>

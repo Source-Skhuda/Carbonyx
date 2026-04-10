@@ -26,26 +26,37 @@
 </div>
 
 <script>
-loginForm.onsubmit = async (e)=>{
+const form = document.getElementById("loginForm");
+
+form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const res = await fetch("/api/login",{
-        method:"POST",
-        headers:{ "Content-Type":"application/json" },
-        body: JSON.stringify({
-            username: user.value,
-            password: pass.value
-        })
-    });
+    const username = document.getElementById("user").value;
+    const password = document.getElementById("pass").value;
 
-    const data = await res.json();
+    try {
+        const res = await fetch("/api/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ username, password })
+        });
 
-    if(res.ok){
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        window.location="dashboard.html";
-    } else alert(data.message);
-};
+        const data = await res.json();
+
+        if (res.ok) {
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            window.location.href = "dashboard.html";
+        } else {
+            alert(data.message);
+        }
+    } catch (err) {
+        alert("Server error. Check console.");
+        console.error(err);
+    }
+});
 
 </script>
 </body>
