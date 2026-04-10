@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Insights</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carbonyx | Insights</title>
+
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -11,25 +13,48 @@
 
 <div class="container">
 
-<div class="sidebar">
-<h2>Carbonyx</h2>
-<a href="dashboard.html">Dashboard</a>
-<a href="insights.html">Insights</a>
-<a href="community.html">Community</a>
-</div>
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <h2>Carbonyx</h2>
+    <nav>
+        <a href="dashboard.html">📊 Dashboard</a>
+        <a href="insights.html" class="active">📈 Insights</a>
+        <a href="community.html">🌍 Community</a>
+    </nav>
+</aside>
 
+<!-- MAIN -->
 <main>
 
-<h1>📊 Insights</h1>
+<header>
+    <h1>📊 Carbon Insights</h1>
+    <p class="sub">Understand your environmental impact</p>
+</header>
 
-<div class="card">
-<canvas id="chart"></canvas>
-</div>
+<!-- GRID -->
+<div class="insights-grid">
 
-<div class="card">
-<h3>Analysis</h3>
-<p id="analysis"></p>
-<p id="tip" class="insight"></p>
+    <!-- CHART -->
+    <div class="card chart-card">
+        <h3>Emissions Breakdown</h3>
+        <canvas id="chart"></canvas>
+    </div>
+
+    <!-- ANALYSIS -->
+    <div class="card">
+        <h3>Analysis</h3>
+        <p id="analysis">Loading...</p>
+        <p id="tip" class="insight"></p>
+    </div>
+
+    <!-- EDUCATIONAL CARD -->
+    <div class="card">
+        <h3>💡 Did You Know?</h3>
+        <p id="eduInfo">
+            Carbon emissions impact climate change by increasing global temperatures.
+        </p>
+    </div>
+
 </div>
 
 </main>
@@ -39,52 +64,82 @@
 const API = "https://carbonyx-3.onrender.com";
 const token = localStorage.getItem("token");
 
+if(!token){
+    window.location.href = "index.html";
+}
+
 let chart;
 
 async function load(){
-    const res = await fetch(API+"/api/activity",{
-        headers:{ Authorization: token }
-    });
+    try{
+        const res = await fetch(API + "/api/activity", {
+            headers: { Authorization: token }
+        });
 
-    const data = await res.json();
+        const data = await res.json();
 
-    let catSum={transport:0,food:0,energy:0};
+        let catSum = { transport: 0, food: 0, energy: 0 };
 
-    data.forEach(a=>{
-        catSum[a.category]+=a.value;
-    });
+        data.forEach(a => {
+            catSum[a.category] += a.value;
+        });
 
-    const top = Object.keys(catSum).reduce((a,b)=>
-        catSum[a]>catSum[b]?a:b
-    );
+        const top = Object.keys(catSum).reduce((a,b)=>
+            catSum[a] > catSum[b] ? a : b
+        );
 
-    document.getElementById("analysis").innerText =
-        "Your highest emissions come from: " + top;
+        // FIXED IDs
+        const analysisEl = document.getElementById("analysis");
+        const tipEl = document.getElementById("tip");
+        const eduInfo = document.getElementById("eduInfo");
 
-    if(top==="transport"){
-    edu.innerText="🚗 Transport is your biggest contributor. Try reducing solo trips, use public transport or carpool. Even 1 day less driving per week can significantly lower emissions.";
-}
-else if(top==="food"){
-    edu.innerText="🍖 Food emissions are high. Meat production has a heavy carbon footprint. Consider plant-based meals 2–3 times a week.";
-}
-else{
-    edu.innerText="⚡ Energy usage is high. Switch off unused appliances and consider energy-efficient devices to cut emissions.";
-}
+        analysisEl.innerText = "Your highest emissions come from: " + top.toUpperCase();
 
-    renderChart(catSum);
+        // SMART TIPS (FIXED BUG HERE)
+        if(top === "transport"){
+            tipEl.innerText = "🚗 Reduce solo driving. Try carpooling or public transport.";
+            eduInfo.innerText = "Transport emissions come from fuel combustion. EVs and public transport reduce impact significantly.";
+        }
+        else if(top === "food"){
+            tipEl.innerText = "🍖 Reduce meat intake. Try plant-based meals.";
+            eduInfo.innerText = "Livestock farming produces methane, a greenhouse gas far stronger than CO₂.";
+        }
+        else{
+            tipEl.innerText = "⚡ Save electricity. Turn off unused devices.";
+            eduInfo.innerText = "Most electricity is generated from fossil fuels, increasing carbon emissions.";
+        }
+
+        renderChart(catSum);
+
+    } catch(err){
+        console.error(err);
+        document.getElementById("analysis").innerText = "Failed to load data.";
+    }
 }
 
 function renderChart(data){
+    const ctx = document.getElementById("chart");
+
     if(chart) chart.destroy();
 
-    chart = new Chart(document.getElementById("chart"),{
-        type:"bar",
-        data:{
-            labels:Object.keys(data),
-            datasets:[{
-                data:Object.values(data),
-                backgroundColor:["#3CCF91","#F4D03F","#5DADE2"]
+    chart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: Object.keys(data),
+            datasets: [{
+                label: "CO₂ Emissions",
+                data: Object.values(data),
+                backgroundColor: ["#3CCF91","#F4D03F","#5DADE2"]
             }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            animation: {
+                duration: 1000
+            }
         }
     });
 }

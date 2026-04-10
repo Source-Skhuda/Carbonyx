@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">   
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard</title>
+
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -22,20 +23,15 @@
 
 <!-- MAIN -->
 <main>
-<button onclick="toggleTheme()">Light Mode</button>
 
-<h1 id="name"></h1>
+<h1 id="name">Welcome</h1>
 
-<!-- CARDS -->
 <div class="cards">
 <div class="card">Total: <span id="total">0</span> kg CO₂</div>
-<div class="card">Weekly: <span id="weekly">0</span></div>
+<div class="card">Weekly: <span id="weekly">0</span> kg</div>
 <div class="card">Status: <span id="status"></span></div>
 </div>
 
-<div class="grid">
-
-<!-- LEFT -->
 <div class="dashboard-grid">
 
 <!-- LEFT -->
@@ -49,6 +45,7 @@
 <option value="food">🍖 Food</option>
 <option value="energy">⚡ Energy</option>
 </select>
+
 <input id="val" type="number" placeholder="kg CO₂">
 <button onclick="add()">Add</button>
 </div>
@@ -78,112 +75,133 @@
 
 </div>
 
-<!-- RIGHT -->
-<div>
-
-<div class="card">
-<canvas id="chart"></canvas>
-</div>
-
-<div class="card">
-<h3>Insights</h3>
-<p id="insight"></p>
-<p class="insight" id="edu"></p>
-</div>
-
-</div>
-
-</div>
-</div>
-
 </main>
 </div>
 
 <script>
-const API = "";
+const API = "https://carbonyx-3.onrender.com";
+
 const token = localStorage.getItem("token");
 const user = JSON.parse(localStorage.getItem("user"));
 
+// 🔐 PROTECT ROUTE
+if(!token || !user){
+    alert("Please login again");
+    window.location = "index.html";
+}
+
+// 👤 USER NAME
 document.getElementById("name").innerText = "Welcome, " + user.username;
+
+// ELEMENTS
+const totalEl = document.getElementById("total");
+const weeklyEl = document.getElementById("weekly");
+const statusEl = document.getElementById("status");
+const list = document.getElementById("list");
+const insight = document.getElementById("insight");
+const edu = document.getElementById("edu");
 
 let chart;
 
+// 🔄 LOAD DATA
 async function load(){
-    const res = await fetch("/api/activity",{
-        headers:{ Authorization: token }
-    });
+    try {
+        const res = await fetch(API + "/api/activity", {
+            headers: { Authorization: token }
+        });
 
-    const data = await res.json();
+        if(!res.ok) throw new Error("Failed to fetch");
 
-    let total=0;
-    let weekly=0;
-    let catSum={transport:0,food:0,energy:0};
+        const data = await res.json();
 
-    list.innerHTML="";
+        if(!data.length){
+            insight.innerText = "No data yet. Start logging activities.";
+            return;
+        }
 
-    const today = new Date();
+        let total=0;
+        let weekly=0;
+        let catSum={transport:0,food:0,energy:0};
 
-    data.forEach(a=>{
-        total+=a.value;
+        list.innerHTML="";
+        const today = new Date();
 
-        const d = new Date(a.date);
-        if((today-d)/(1000*60*60*24)<=7) weekly+=a.value;
+        data.forEach(a=>{
+            total+=a.value;
 
-        catSum[a.category]+=a.value;
+            const d = new Date(a.date);
+            if((today-d)/(1000*60*60*24)<=7) weekly+=a.value;
 
-        const li=document.createElement("li");
-        li.innerText=a.category+" - "+a.value+" kg";
-        list.appendChild(li);
-    });
+            catSum[a.category]+=a.value;
 
-    totalEl.innerText=total.toFixed(2);
-    weeklyEl.innerText=weekly.toFixed(2);
+            const li=document.createElement("li");
+            li.innerText = `${a.category} - ${a.value} kg`;
+            list.appendChild(li);
+        });
 
-    // STATUS
-    if(total > 80){
-    status.innerText = "⚠️ High";
-    status.className = "status-bad";
-} else {
-    status.innerText = "✅ Good";
-    status.className = "status-good";
+        totalEl.innerText = total.toFixed(2);
+        weeklyEl.innerText = weekly.toFixed(2);
+
+        // STATUS
+        if(total > 80){
+            statusEl.innerText = "⚠️ High";
+            statusEl.className = "status-bad";
+        } else {
+            statusEl.innerText = "✅ Good";
+            statusEl.className = "status-good";
+        }
+
+        // INSIGHTS
+        const top = Object.keys(catSum).reduce((a,b)=>
+            catSum[a]>catSum[b]?a:b
+        );
+
+        insight.innerText = "Top contributor: " + top;
+
+        if(top==="transport"){
+            edu.innerText="🚗 Try reducing driving. Use public transport or carpool.";
+        }
+        else if(top==="food"){
+            edu.innerText="🍖 Reduce meat consumption for lower emissions.";
+        }
+        else{
+            edu.innerText="⚡ Save electricity by switching off unused devices.";
+        }
+
+        renderChart(catSum);
+
+    } catch(err){
+        console.error(err);
+        alert("Error loading dashboard");
+    }
 }
 
-    // INSIGHTS
-    const top = Object.keys(catSum).reduce((a,b)=>
-        catSum[a]>catSum[b]?a:b
-    );
-
-    insight.innerText = "Top contributor: "+top;
-
-    if(top==="transport"){
-        edu.innerText="Driving emits CO₂ due to fuel combustion. Try carpooling or public transport.";
-    }
-    else if(top==="food"){
-        edu.innerText="Meat production has high emissions. Consider plant-based meals.";
-    }
-    else{
-        edu.innerText="Electricity often comes from fossil fuels. Save power where possible.";
-    }
-
-    renderChart(catSum);
-}
-
+// ➕ ADD ACTIVITY
 async function add(){
-    await fetch("/api/activity",{
+    const value = parseFloat(document.getElementById("val").value);
+
+    if(!value){
+        alert("Enter valid number");
+        return;
+    }
+
+    await fetch(API + "/api/activity", {
         method:"POST",
         headers:{
             "Content-Type":"application/json",
             Authorization: token
         },
         body: JSON.stringify({
-            category: cat.value,
-            value: parseFloat(val.value)
+            category: document.getElementById("cat").value,
+            value
         })
     });
 
+    document.getElementById("val").value = "";
     load();
 }
 
+// 📊 CHART
 function renderChart(data){
     if(chart) chart.destroy();
 
@@ -192,36 +210,14 @@ function renderChart(data){
         data:{
             labels:Object.keys(data),
             datasets:[{
-                data:Object.values(data)
+                data:Object.values(data),
+                backgroundColor:["#3CCF91","#F4D03F","#5DADE2"]
             }]
         }
     });
 }
 
-const totalEl=document.getElementById("total");
-const weeklyEl=document.getElementById("weekly");
-const status=document.getElementById("status");
-
 load();
-
-function toggleTheme(){
-    const current = localStorage.getItem("theme");
-
-    if(current === "light"){
-        document.body.classList.remove("light");
-        localStorage.setItem("theme","dark");
-    } else {
-        document.body.classList.add("light");
-        localStorage.setItem("theme","light");
-    }
-}
-
-// LOAD THEME
-if(localStorage.getItem("theme")==="light"){
-    document.body.classList.add("light");
-}
-
-
 </script>
 
 </body>
